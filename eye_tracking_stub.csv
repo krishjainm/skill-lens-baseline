@@ -1,3 +1,4 @@
-2026-04-14T20:55:50.456385,IMG_2301.mov,eye_tracking_started
-2026-04-14T20:55:53.076987,IMG_2304.mov,eye_tracking_started
-2026-04-14T20:55:54.964530,IMG_2305.mov,eye_tracking_started
+timestamp,video_name,event,session_id
+2026-04-14T20:55:53.076987,IMG_2304.mov,eye_tracking_started,legacy_no_session
+2026-04-14T20:55:54.964530,IMG_2305.mov,eye_tracking_started,legacy_no_session
+2026-04-23T14:26:25.593944,IMG_2301.mov,eye_tracking_started,fce13160-bdd4-4ecd-856e-029939842ce0

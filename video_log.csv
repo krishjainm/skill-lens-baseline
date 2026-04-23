@@ -1,7 +1,8 @@
-timestamp,video_name
-2026-04-14T20:52:18.306179,IMG_2301.mov
-2026-04-14T20:52:42.670974,IMG_2304.mov
-2026-04-14T20:52:44.798426,IMG_2305.mov
-2026-04-14T20:55:50.456385,IMG_2301.mov,video_selected
-2026-04-14T20:55:53.075987,IMG_2304.mov,video_selected
-2026-04-14T20:55:54.963530,IMG_2305.mov,video_selected
+timestamp,video_name,event,session_id
+2026-04-14T20:52:18.306179,IMG_2301.mov,video_selected,legacy_no_session
+2026-04-14T20:52:42.670974,IMG_2304.mov,video_selected,legacy_no_session
+2026-04-14T20:52:44.798426,IMG_2305.mov,video_selected,legacy_no_session
+2026-04-14T20:55:50.456385,IMG_2301.mov,video_selected,legacy_no_session
+2026-04-14T20:55:53.075987,IMG_2304.mov,video_selected,legacy_no_session
+2026-04-14T20:55:54.963530,IMG_2305.mov,video_selected,legacy_no_session
+2026-04-23T14:26:25.593944,IMG_2301.mov,video_selected,fce13160-bdd4-4ecd-856e-029939842ce0
