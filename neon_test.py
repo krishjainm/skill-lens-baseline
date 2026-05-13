@@ -19,7 +19,7 @@ def main() -> int:
         return 1
 
     print("Looking for a device (10 s)...")
-    device = discover_one_device(max_search_duration_seconds=10)
+    device = discover_one_device(max_search_duration_seconds=30)
     if device is None:
         print("No device found.", file=sys.stderr)
         return 1

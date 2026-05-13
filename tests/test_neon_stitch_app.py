@@ -26,11 +26,38 @@ class TestGazeToRow(unittest.TestCase):
         )
         row = ngr._gaze_to_row(g, "S1", "sess")
         self.assertEqual(row["timestamp_unix_seconds"], 1.5)
+        self.assertEqual(row["time_ms"], 1500)
         self.assertEqual(row["x"], 0.1)
         self.assertEqual(row["y"], 0.2)
+        self.assertEqual(row["z"], "")
         self.assertIs(row["worn"], True)
+        self.assertIs(row["in_out"], True)
         self.assertEqual(row["device_serial"], "S1")
         self.assertEqual(row["session_id"], "sess")
+
+    def test_gaze_to_row_out_of_bounds(self) -> None:
+        import neon_gaze_recorder as ngr
+
+        g = SimpleNamespace(
+            timestamp_unix_seconds=2.0,
+            x=2000,
+            y=0.5,
+            worn=False,
+        )
+        row = ngr._gaze_to_row(g, "S2", "sess2")
+        self.assertIs(row["in_out"], False)
+
+    def test_gaze_to_row_none_coords(self) -> None:
+        import neon_gaze_recorder as ngr
+
+        g = SimpleNamespace(
+            timestamp_unix_seconds=3.0,
+            x=None,
+            y=None,
+            worn=False,
+        )
+        row = ngr._gaze_to_row(g, "S3", "sess3")
+        self.assertIs(row["in_out"], False)
 
 
 class TestPathutilRemove(unittest.TestCase):

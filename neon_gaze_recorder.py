@@ -25,11 +25,23 @@ _ROOT = Path(__file__).resolve().parent
 
 
 def _gaze_to_row(gaze, device_serial: str, session_id: str) -> dict[str, object]:
+    x, y = gaze.x, gaze.y
+    in_out = (
+        x is not None
+        and y is not None
+        and 0 <= x <= 1600
+        and 0 <= y <= 1200
+    )
     return {
         "timestamp_unix_seconds": gaze.timestamp_unix_seconds,
-        "x": gaze.x,
-        "y": gaze.y,
+        "time_ms": int(gaze.timestamp_unix_seconds * 1000),
+        "x": x,
+        "y": y,
+        # z is included for Arthur's requested coordinate schema; currently
+        # left blank because Neon realtime gaze samples provide 2D x/y only.
+        "z": "",
         "worn": gaze.worn,
+        "in_out": in_out,
         "device_serial": device_serial,
         "session_id": session_id,
     }
@@ -149,11 +161,8 @@ def main() -> int:
         session_id = str(uuid.uuid4())
 
     print("Looking for a Neon device (Companion app must be running, same network)...")
-    device = discover_one_device(max_search_duration_seconds=args.search_timeout)
-    if device is None:
-        print("No device found. No session was started for recording.", file=sys.stderr)
-        return 1
-
+    from pupil_labs.realtime_api.simple import Device
+    device = Device("10.223.80.227", 8080)
     print(
         f"Session ID for this recording: {session_id}\n"
         "(Match the Streamlit sidebar session, or set NEON_SESSION_ID / --session-id next time.)"
@@ -193,9 +202,12 @@ def main() -> int:
 
         fieldnames = [
             "timestamp_unix_seconds",
+            "time_ms",
             "x",
             "y",
+            "z",
             "worn",
+            "in_out",
             "device_serial",
             "session_id",
         ]
