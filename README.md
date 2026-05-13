@@ -51,6 +51,18 @@ For **unbounded** recording (`--duration` 0), **`--no-gaze-seconds N`** fails fa
 
 **`--inactivity-seconds M`** (after the **first** gaze row) ends the run with exit 1 if **M** wall-clock seconds pass without a new row—useful for a dead stream after data started. **M** should exceed the normal gap between valid samples for your update rate, or you may exit spuriously. A background thread feeds `receive_gaze_datum()` into a queue; the main loop **polls the queue** (up to once per second when deadlines apply) so inactivity and timed duration are re-evaluated even if the API blocks. **Before** those checks each iteration, any sample already in the queue is **written to the CSV** so a gaze that arrived just before a timed stop is not lost when the run ends. When the loop **stops** (any reason), the queue is flushed the same way—pending samples are written, not dropped, and the receive thread is unblocked. Disabled when *M* is 0 (default). Meta JSON write errors are a stderr warning and do not mask the run outcome; the metadata file stores an absolute `csv_path` when possible.
 
+## Plotting
+
+```bash
+python plot_gaze_runs.py
+```
+
+Reads the two CSV runs under `output/` and produces:
+
+- **Time vs X** and **Time vs Y** (seconds) — baseline vs eye-movement comparison.
+- **X vs Y** scatter — spatial gaze pattern.
+- **Gaze Time Series Sync Plot** — uses `time_ms` (normalized to start at 0) so gaze time can be compared against video time. X and Y gaze are shown in separate subplots sharing the same time axis. Saved as `gaze_time_sync_plot_baseline.png` and `gaze_time_sync_plot_eye_movement.png`. Falls back to `timestamp_unix_seconds * 1000` if `time_ms` is missing from an older CSV.
+
 ## Stitch (optional)
 
 ```bash
@@ -62,4 +74,4 @@ Requires the three `videos/IMG_*.mov` inputs (or change paths in `stitch.py`). O
 ## Logs
 
 - `video_log.csv` / `eye_tracking_stub.csv`: `timestamp, video_name, event, session_id`. The helpers `log_video_selection` / `log_eye_data_stub` / `log_session_ui_events_for_video` all write the **same paired rows**; use **at most one** per selection to avoid duplicate lines.
-- Gaze file columns include `session_id` for joins with the UI.
+- Gaze CSV columns: `timestamp_unix_seconds, time_ms, x, y, z, worn, in_out, device_serial, session_id`. `time_ms` is the timestamp in milliseconds (for video-sync). `z` is reserved for a future depth coordinate (currently blank—Neon provides 2D gaze only). `in_out` is `True` when x/y fall within the expected gaze bounds (0–1600 × 0–1200), `False` otherwise. `session_id` is for joins with the UI logs.
