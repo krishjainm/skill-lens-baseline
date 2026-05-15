@@ -38,6 +38,25 @@ def _save(fig: plt.Figure, name: str) -> None:
     print(f"Saved {path}")
 
 
+def _parse_in_out(series: pd.Series) -> pd.Series:
+    """Coerce in_out to integer 0/1 regardless of bool-string or numeric input."""
+    mapped = series.astype(str).str.strip().str.lower()
+    return mapped.map({"true": 1, "false": 0, "1": 1, "0": 0, "1.0": 1, "0.0": 0}).fillna(0).astype(int)
+
+
+def _print_in_out_stats(df: pd.DataFrame, label: str) -> None:
+    raw = df["in_out"]
+    unique = sorted({str(v) for v in raw.dropna().unique()})
+    parsed = _parse_in_out(raw)
+    n = len(parsed)
+    n_in = int(parsed.sum())
+    n_out = n - n_in
+    pct_in = 100.0 * n_in / n if n else 0.0
+    pct_out = 100.0 * n_out / n if n else 0.0
+    print(f"  [{label}] unique in_out values: {unique}")
+    print(f"  [{label}] in: {n_in}/{n} ({pct_in:.1f}%)  out: {n_out}/{n} ({pct_out:.1f}%)")
+
+
 def main() -> None:
     _PLOTS.mkdir(exist_ok=True)
 
@@ -113,6 +132,25 @@ def main() -> None:
     ax.set_ylabel("Y gaze position")
     ax.legend()
     _save(fig, "x_vs_y_gaze_pattern.png")
+
+    # ---- in_out vs Time ----
+    io1 = _parse_in_out(df1["in_out"])
+    io2 = _parse_in_out(df2["in_out"])
+
+    fig, ax = plt.subplots(figsize=(10, 3))
+    ax.step(df1["time_sec"], io1, where="post", linewidth=0.8, label="baseline")
+    ax.step(df2["time_sec"], io2, where="post", linewidth=0.8, label="eye movement")
+    ax.set_title("In/Out vs Time")
+    ax.set_xlabel("Time (seconds)")
+    ax.set_ylabel("in_out (1 = in, 0 = out)")
+    ax.set_yticks([0, 1])
+    ax.set_yticklabels(["out", "in"])
+    ax.legend()
+    _save(fig, "in_out_vs_time.png")
+
+    print("\nin_out field summary:")
+    _print_in_out_stats(df1, "baseline")
+    _print_in_out_stats(df2, "eye movement")
 
     print(f"\nAll plots saved to {_PLOTS}/")
 
