@@ -162,7 +162,7 @@ def main() -> int:
 
     print("Looking for a Neon device (Companion app must be running, same network)...")
     from pupil_labs.realtime_api.simple import Device
-    device = Device("10.223.80.227", 8080)
+    device = Device("10.226.171.107", 8080)
     print(
         f"Session ID for this recording: {session_id}\n"
         "(Match the Streamlit sidebar session, or set NEON_SESSION_ID / --session-id next time.)"
