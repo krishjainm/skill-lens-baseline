@@ -2,3 +2,9 @@ timestamp,video_name,event,session_id
 2026-04-14T20:55:53.076987,IMG_2304.mov,eye_tracking_started,legacy_no_session
 2026-04-14T20:55:54.964530,IMG_2305.mov,eye_tracking_started,legacy_no_session
 2026-04-23T14:26:25.593944,IMG_2301.mov,eye_tracking_started,fce13160-bdd4-4ecd-856e-029939842ce0
+2026-04-23T15:36:55.283475,IMG_2301.mov,eye_tracking_started,26984987-5411-4014-a6b9-60984fc7e2d7
+2026-04-23T15:37:38.291388,IMG_2301.mov,eye_tracking_started,41bd016e-c92f-4874-874c-0bdfe410f771
+2026-04-23T15:46:55.687434,IMG_2301.mov,eye_tracking_started,a5c4c331-607d-4d7f-9620-79299a0ef761
+2026-04-23T15:55:29.898699,IMG_2301.mov,eye_tracking_started,1c26fe6d-c54d-4f7d-8448-8ecefdf31813
+2026-04-29T15:59:40.212715,IMG_2301.mov,eye_tracking_started,ef6498e8-22d5-4a6c-bbb6-166ac6d48c54
+2026-04-29T15:59:49.745381,IMG_2301.mov,eye_tracking_started,95647e0b-419b-4872-8276-2e64ac4e2f72

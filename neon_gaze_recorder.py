@@ -37,8 +37,8 @@ def _gaze_to_row(gaze, device_serial: str, session_id: str) -> dict[str, object]
         "time_ms": int(gaze.timestamp_unix_seconds * 1000),
         "x": x,
         "y": y,
-        # z is included for Arthur's requested coordinate schema; currently
-        # left blank because Neon realtime gaze samples provide 2D x/y only.
+        # z is constant (empty) because Neon projects gaze onto a head-fixed
+        # plane, yielding 2D x/y only.  Kept for Arthur's coordinate schema.
         "z": "",
         "worn": gaze.worn,
         "in_out": in_out,

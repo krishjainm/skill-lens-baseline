@@ -57,11 +57,43 @@ For **unbounded** recording (`--duration` 0), **`--no-gaze-seconds N`** fails fa
 python plot_gaze_runs.py
 ```
 
-Reads the two CSV runs under `output/` and produces:
+Reads the two CSV runs under `output/` and saves all figures to `plots/`:
 
-- **Time vs X** and **Time vs Y** (seconds) — baseline vs eye-movement comparison.
-- **X vs Y** scatter — spatial gaze pattern.
-- **Gaze Time Series Sync Plot** — uses `time_ms` (normalized to start at 0) so gaze time can be compared against video time. X and Y gaze are shown in separate subplots sharing the same time axis. Saved as `gaze_time_sync_plot_baseline.png` and `gaze_time_sync_plot_eye_movement.png`. Falls back to `timestamp_unix_seconds * 1000` if `time_ms` is missing from an older CSV.
+| File | Description |
+|------|-------------|
+| `time_vs_x.png` | Time vs X — baseline vs eye-movement comparison |
+| `time_vs_y.png` | Time vs Y — baseline vs eye-movement comparison |
+| `time_vs_z.png` | Time vs Z — expected flat (head-fixed plane) |
+| `gaze_time_sync_baseline.png` | Stacked X/Y/Z sync plot (baseline run) |
+| `gaze_time_sync_eye_movement.png` | Stacked X/Y/Z sync plot (eye-movement run) |
+| `x_vs_y_gaze_pattern.png` | X vs Y spatial gaze pattern |
+
+Falls back to `timestamp_unix_seconds * 1000` if `time_ms` is missing from an older CSV.
+
+## Current experiment status
+
+**Baseline run** (`neon_gaze_20260514_164420_-1.csv`) — subject fixated on a single point. X and Y show low-variance noise around the fixation center, confirming the pipeline captures steady gaze.
+
+**Eye-movement run** (`neon_gaze_20260514_165253_-1.csv`) — subject moved eyes deliberately. X and Y exhibit periodic oscillations that clearly separate from the baseline.
+
+**z coordinate** — currently constant (empty / 0) across all samples. Neon projects gaze onto a head-fixed plane, so only 2D x/y are available from the realtime API. The column is kept in the CSV for future depth integration.
+
+**worn / in_out** — `worn` reflects whether the Neon detects it is being worn; `in_out` is `True` when x/y fall within expected gaze bounds (0–1600 × 0–1200).
+
+### How to run the recorder
+
+```bash
+# Start the Neon Companion app on the same network, then:
+python neon_gaze_recorder.py                          # unbounded, Ctrl-C to stop
+python neon_gaze_recorder.py --duration 30            # timed 30-second capture
+python neon_gaze_recorder.py --session-id <UUID>      # link to Streamlit session
+```
+
+### How to run the plotting script
+
+```bash
+python plot_gaze_runs.py    # reads output/ CSVs, writes plots/ images
+```
 
 ## Stitch (optional)
 
@@ -74,4 +106,4 @@ Requires the three `videos/IMG_*.mov` inputs (or change paths in `stitch.py`). O
 ## Logs
 
 - `video_log.csv` / `eye_tracking_stub.csv`: `timestamp, video_name, event, session_id`. The helpers `log_video_selection` / `log_eye_data_stub` / `log_session_ui_events_for_video` all write the **same paired rows**; use **at most one** per selection to avoid duplicate lines.
-- Gaze CSV columns: `timestamp_unix_seconds, time_ms, x, y, z, worn, in_out, device_serial, session_id`. `time_ms` is the timestamp in milliseconds (for video-sync). `z` is reserved for a future depth coordinate (currently blank—Neon provides 2D gaze only). `in_out` is `True` when x/y fall within the expected gaze bounds (0–1600 × 0–1200), `False` otherwise. `session_id` is for joins with the UI logs.
+- Gaze CSV columns: `timestamp_unix_seconds, time_ms, x, y, z, worn, in_out, device_serial, session_id`. `time_ms` is the timestamp in milliseconds (for video-sync). `z` is currently constant (blank) because Neon projects gaze onto a head-fixed plane—only 2D x/y are provided by the realtime API; the column is retained for future depth integration. `in_out` is `True` when x/y fall within the expected gaze bounds (0–1600 × 0–1200), `False` otherwise. `session_id` is for joins with the UI logs.
