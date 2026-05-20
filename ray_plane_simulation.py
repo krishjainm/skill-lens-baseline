@@ -16,8 +16,8 @@ _OUT_DIR = _ROOT / "output"
 
 CASES = [
     {"case_name": "close_plane", "z_distance": 0.5},
-    {"case_name": "medium_plane", "z_distance": 2.0},
-    {"case_name": "far_plane", "z_distance": 5.0},
+    {"case_name": "transition_plane", "z_distance": 1.2},
+    {"case_name": "far_plane", "z_distance": 3.0},
 ]
 
 N_STEPS = 300
