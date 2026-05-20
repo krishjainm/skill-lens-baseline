@@ -1,6 +1,4 @@
-"""
-Import ``app`` with Streamlit and filesystem mocked (no real UI run).
-"""
+"""Smoke-test that app.py imports and runs startup logic without launching real Streamlit."""
 import importlib
 import os
 import sys

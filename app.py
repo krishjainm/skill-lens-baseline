@@ -1,3 +1,4 @@
+"""Streamlit UI: pick a video under videos/, play it, log which clip was watched (session id ties to Neon)."""
 import os
 import uuid
 

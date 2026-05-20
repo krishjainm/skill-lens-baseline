@@ -1,3 +1,4 @@
+"""Tests upgrading old two-column video CSVs to the current four-column schema in logger."""
 import csv
 import importlib
 import os

@@ -1,3 +1,4 @@
+"""Convert and concatenate the project's demo MOV clips into a single stitched MP4."""
 import os
 import subprocess
 import sys

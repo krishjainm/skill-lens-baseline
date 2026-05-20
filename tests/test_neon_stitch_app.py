@@ -1,7 +1,4 @@
-"""
-Smoke tests for small helpers in neon_gaze_recorder, stitch, and paired UI logging
-(no Streamlit, no real devices).
-"""
+"""Unit/smoke tests for neon_gaze_recorder, stitch helpers, and logging—no headset or Streamlit runtime."""
 import importlib
 import os
 import sys

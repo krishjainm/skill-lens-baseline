@@ -95,6 +95,30 @@ python neon_gaze_recorder.py --session-id <UUID>      # link to Streamlit sessio
 python plot_gaze_runs.py    # reads output/ CSVs, writes plots/ images
 ```
 
+## Ray-plane simulation
+
+Synthetic baseline task from Arthur: compute where a gaze vector intersects a finite rectangular video plane and determine geometry-based **in/out** (replacing the old raw x/y bounds check).
+
+- `ray_plane_geometry.py` — pure numpy helpers (ray-plane intersection, local UV coordinates, rectangle test).
+- `ray_plane_simulation.py` — generates `output/ray_plane_simulation.csv` with three distance cases (close / medium / far plane).
+- `plot_ray_plane_simulation.py` — reads that CSV and writes plots + a text summary to `plots/ray_plane/`.
+
+```bash
+python ray_plane_simulation.py          # generate synthetic CSV
+python plot_ray_plane_simulation.py     # produce plots + summary
+python -m unittest discover -s tests -v # run all tests including ray-plane geometry
+```
+
+How the pieces relate to the rest of the repo:
+
+| Script | Purpose |
+|--------|---------|
+| `neon_gaze_recorder.py` | Records raw Neon gaze (unchanged) |
+| `plot_gaze_runs.py` | Plots old raw Neon validation runs (unchanged) |
+| `ray_plane_simulation.py` | Current synthetic vector-plane task |
+
+Real Quest/IMU data will be plugged in later; this is a synthetic-only demo for now.
+
 ## Stitch (optional)
 
 ```bash
