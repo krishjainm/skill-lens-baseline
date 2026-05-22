@@ -1,0 +1,23 @@
+--- close_plane ---
+  rows:         300
+  hits:         300
+  in_out:       300
+  reasons:      {'inside': 300}
+  mean distance: 0.518521
+  max distance:  0.518521
+
+--- transition_plane ---
+  rows:         300
+  hits:         300
+  in_out:       186
+  reasons:      {'inside': 186, 'outside': 114}
+  mean distance: 1.202197
+  max distance:  1.202197
+
+--- far_plane ---
+  rows:         300
+  hits:         300
+  in_out:       0
+  reasons:      {'outside': 300}
+  mean distance: 3.061918
+  max distance:  3.061918
