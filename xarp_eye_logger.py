@@ -1,5 +1,5 @@
 """
-xarp_eye_logger.py — Use XARP to inspect and log real XR eye/head tracking data to CSV.
+xarp_eye_logger.py — Use XARP to log real XR eye tracking data to CSV.
 
 Reference: HAL-UCSB/xarp demos/brush.py
 """
@@ -11,6 +11,7 @@ import signal
 import time
 from datetime import datetime
 
+from xarp.data_models import Pose
 from xarp.express import SyncXR
 from xarp.server import run, make_qrcode_image
 
@@ -27,46 +28,8 @@ def handle_sigint(sig, frame):
 signal.signal(signal.SIGINT, handle_sigint)
 
 
-def safe_get(obj, key, default=""):
-    """Safely retrieve an attribute or key from an object."""
-    if obj is None:
-        return default
-    if isinstance(obj, dict):
-        return obj.get(key, default)
-    return getattr(obj, key, default)
-
-
-def extract_position(obj):
-    """Extract x, y, z position from a Pose or object with a position attribute."""
-    if obj is None:
-        return ("", "", "")
-    pos = safe_get(obj, "position", None)
-    if pos is None:
-        return ("", "", "")
-    x = safe_get(pos, "x", "")
-    y = safe_get(pos, "y", "")
-    z = safe_get(pos, "z", "")
-    return (x, y, z)
-
-
-def extract_orientation(obj):
-    """Extract x, y, z, w orientation (quaternion) from a Pose or object with an orientation/rotation attribute."""
-    if obj is None:
-        return ("", "", "", "")
-    ori = safe_get(obj, "orientation", None)
-    if ori is None:
-        ori = safe_get(obj, "rotation", None)
-    if ori is None:
-        return ("", "", "", "")
-    x = safe_get(ori, "x", "")
-    y = safe_get(ori, "y", "")
-    z = safe_get(ori, "z", "")
-    w = safe_get(ori, "w", "")
-    return (x, y, z, w)
-
-
 def parse_args():
-    parser = argparse.ArgumentParser(description="XARP Eye/Head Tracking Logger")
+    parser = argparse.ArgumentParser(description="XARP Eye Tracking Logger")
     parser.add_argument(
         "--duration", type=float, default=30.0,
         help="Recording duration in seconds (default: 30)"
@@ -93,9 +56,6 @@ def app(xr: SyncXR, *args, **kwargs) -> None:
         "timestamp_unix_seconds",
         "time_ms",
         "frame_index",
-        "available_keys",
-        "eye_available",
-        "head_available",
         "eye_position_x",
         "eye_position_y",
         "eye_position_z",
@@ -112,10 +72,9 @@ def app(xr: SyncXR, *args, **kwargs) -> None:
         "head_orientation_w",
     ]
 
-    stream = xr.sense(eye=True, head=True)
+    stream = xr.sense(eyes=True)
     start_time = time.time()
     frame_index = 0
-    first_frame_printed = False
 
     with open(csv_path, "w", newline="") as f:
         writer = csv.writer(f)
@@ -132,42 +91,26 @@ def app(xr: SyncXR, *args, **kwargs) -> None:
             now_unix = time.time()
             time_ms = elapsed * 1000.0
 
-            keys = list(frame.keys()) if isinstance(frame, dict) else dir(frame)
-            available_keys = ";".join(str(k) for k in keys)
+            eyes: Pose = frame['eyes']
 
-            if not first_frame_printed:
-                print(f"\n[Frame 0] Available keys: {keys}")
-                first_frame_printed = True
+            if frame_index < 3:
+                print(eyes.position)
+                print(eyes.rotation)
 
-            eye_data = frame.get("eye", None) if isinstance(frame, dict) else getattr(frame, "eye", None)
-            head_data = frame.get("head", None) if isinstance(frame, dict) else getattr(frame, "head", None)
-
-            eye_available = eye_data is not None
-            head_available = head_data is not None
-
-            eye_pos = extract_position(eye_data)
-            eye_ori = extract_orientation(eye_data)
-            head_pos = extract_position(head_data)
-            head_ori = extract_orientation(head_data)
+            pos = eyes.position
+            rot = eyes.rotation
 
             row = [
                 f"{now_unix:.6f}",
                 f"{time_ms:.1f}",
                 frame_index,
-                available_keys,
-                eye_available,
-                head_available,
-                *eye_pos,
-                *eye_ori,
-                *head_pos,
-                *head_ori,
+                pos.x, pos.y, pos.z,
+                rot.x, rot.y, rot.z, rot.w,
+                "", "", "",
+                "", "", "", "",
             ]
             writer.writerow(row)
             frame_index += 1
-
-            if frame_index <= 3:
-                print(f"  [Frame {frame_index}] eye={eye_available} head={head_available} "
-                      f"eye_pos={eye_pos} head_pos={head_pos}")
 
         stream.close()
 
