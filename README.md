@@ -146,6 +146,25 @@ How the pieces relate:
   `plots/xarp_eye_plane/` (UV scatter, in/out vs time, hit x/y/z vs time, gaze
   direction vs time) plus `summary_stats.txt`.
 
+### Visual sanity check (XR)
+
+Per Arthur: display a panel at the **same** location our projection code assumes
+for the video plane, so the placement can be eyeballed from inside the headset
+(reference: HAL-UCSB/xarp `demos/video_feed.py`).
+
+```powershell
+python xarp_assumed_plane_panel.py
+```
+
+- `xarp_assumed_plane_panel.py` — pins a flat `Quad` panel at `plane_center =
+  [0, 0, -1.0]` with scale `(width=1.0, height=0.6, 1.0)` and adds a small red
+  sphere at the plane center. Unlike the demo, it does **not** follow the eye
+  (`eye.ray_point(.49)`); it stays at our fixed assumed plane and optionally
+  prints the eye pose each frame. Stop with Ctrl+C.
+- Rotation uses **identity** (panel normal along `+Z`, matching `plane_normal =
+  [0, 0, 1]`). If the panel faces away in-headset, set `FLIP_PANEL = True` in the
+  script (180° about Y); it is not silently flipped.
+
 **Assumptions to validate with Arthur:**
 
 - The plane is still **synthetic / fixed** for now: `plane_center = [0, 0, -1.0]`,
