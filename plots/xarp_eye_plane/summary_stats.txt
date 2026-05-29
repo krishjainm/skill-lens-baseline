@@ -1,0 +1,13 @@
+Real XARP eye -> video plane projection summary
+================================================
+rows:            168
+valid hit count: 162
+in_out count:    0
+reason counts:   {'outside': 162, 'behind_ray': 6}
+
+Plane assumptions used (validate with Arthur):
+  plane_center: 0.0, 0.0, -1.0
+  plane_normal: 0.0, 0.0, 1.0
+  plane_width:  1.0
+  plane_height: 0.6
+  local forward vector assumption: [0, 0, -1]

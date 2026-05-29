@@ -1,0 +1,2 @@
+timestamp_unix_seconds,time_ms,frame_index,available_keys,eye_key_used,eye_available,eye_position_x,eye_position_y,eye_position_z,eye_orientation_x,eye_orientation_y,eye_orientation_z,eye_orientation_w,head_position_x,head_position_y,head_position_z,head_orientation_x,head_orientation_y,head_orientation_z,head_orientation_w
+1779841454.122879,112.4,0,eye,eye,True,-0.019422657787799835,1.0013989210128784,-0.036330077797174454,-0.3500012159347534,0.007489022333174944,-0.025276560336351395,-0.9363783001899719,,,,,,,
