@@ -119,6 +119,42 @@ How the pieces relate to the rest of the repo:
 
 Real Quest/IMU data will be plugged in later; this is a synthetic-only demo for now.
 
+## XARP real eye logging and projection
+
+The first bridge from **real** Quest/XARP eye-pose data into the existing
+ray-plane geometry. The synthetic pipeline above is untouched.
+
+```powershell
+.\.venv313\Scripts\Activate.ps1
+python xarp_eye_logger.py --duration 15
+python project_xarp_eye_to_plane.py --input output/xarp_eye_log_<timestamp>.csv
+python plot_xarp_eye_plane_projection.py --input output/xarp_eye_plane_projection_<timestamp>.csv
+```
+
+How the pieces relate:
+
+- `ray_plane_simulation.py` — uses **synthetic** gaze data (unchanged).
+- `xarp_eye_logger.py` — logs **real** Quest/XARP eye-pose data to
+  `output/xarp_eye_log_<timestamp>.csv`. The correct returned frame key is
+  `"eye"` (singular), not `"eyes"`. Head-pose columns are present but blank for
+  now (stream requests `eye=True` only).
+- `project_xarp_eye_to_plane.py` — the **first bridge** from real eye pose to
+  the existing ray-plane geometry. It reads the eye log, converts each eye
+  orientation quaternion into a gaze direction, intersects with the video plane,
+  and writes `output/xarp_eye_plane_projection_<timestamp>.csv`.
+- `plot_xarp_eye_plane_projection.py` — plots the projection output to
+  `plots/xarp_eye_plane/` (UV scatter, in/out vs time, hit x/y/z vs time, gaze
+  direction vs time) plus `summary_stats.txt`.
+
+**Assumptions to validate with Arthur:**
+
+- The plane is still **synthetic / fixed** for now: `plane_center = [0, 0, -1.0]`,
+  `plane_normal = [0, 0, 1.0]`, `plane_width = 1.0`, `plane_height = 0.6`.
+- The **forward vector** assumption is local `[0, 0, -1]` (OpenXR convention)
+  rotated by the eye quaternion. If the projection appears sign-inverted we may
+  try `[0, 0, 1]`, but it is not silently flipped.
+- The plane frame (UV axes) reuses `make_plane_axes` from the synthetic pipeline.
+
 ## Stitch (optional)
 
 ```bash

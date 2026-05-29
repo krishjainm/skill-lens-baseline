@@ -57,8 +57,11 @@ def get_frame_keys(frame):
 def find_eye_pose(frame):
     """
     Try common key names first, then fall back to any Pose-like object.
+
+    NOTE: The correct returned frame key for real Quest/XARP eye data is "eye"
+    (singular), NOT "eyes". We deliberately do not look up "eyes".
     """
-    candidate_keys = ["eyes", "eye", "gaze", "pose"]
+    candidate_keys = ["eye", "gaze", "pose"]
 
     if isinstance(frame, dict):
         for key in candidate_keys:
@@ -152,62 +155,71 @@ def app(xr: SyncXR, *args, **kwargs) -> None:
         "head_orientation_w",
     ]
 
+    # Eye-only stream. Head pose is not requested here, so head_* columns stay
+    # blank for now (see task scope: finalize the real eye-data bridge first).
     stream = xr.sense(eye=True)
     start_time = time.time()
     elapsed = 0.0
     frame_index = 0
 
-    with open(csv_path, "w", newline="") as f:
-        writer = csv.writer(f)
-        writer.writerow(columns)
+    try:
+        with open(csv_path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(columns)
 
-        for frame in stream:
-            if STOP_FLAG:
-                break
+            for frame in stream:
+                if STOP_FLAG:
+                    break
 
-            elapsed = time.time() - start_time
-            if elapsed >= duration:
-                break
+                elapsed = time.time() - start_time
+                if elapsed >= duration:
+                    break
 
-            now_unix = time.time()
-            time_ms = elapsed * 1000.0
+                now_unix = time.time()
+                time_ms = elapsed * 1000.0
 
-            keys = get_frame_keys(frame)
-            eye_pose, eye_key = find_eye_pose(frame)
+                keys = get_frame_keys(frame)
+                eye_pose, eye_key = find_eye_pose(frame)
 
-            if frame_index < 5:
-                print(f"\n[Frame {frame_index}] keys = {keys}")
-                print(f"[Frame {frame_index}] eye_key_used = {eye_key!r}")
-                print(f"[Frame {frame_index}] raw frame = {frame}")
-                if eye_pose is not None:
-                    print(f"[Frame {frame_index}] position = {safe_get(eye_pose, 'position', None)}")
-                    print(f"[Frame {frame_index}] rotation = {safe_get(eye_pose, 'rotation', None)}")
+                if frame_index < 5:
+                    print(f"\n[Frame {frame_index}] keys = {keys}")
+                    print(f"[Frame {frame_index}] eye_key_used = {eye_key!r}")
+                    print(f"[Frame {frame_index}] raw frame = {frame}")
+                    if eye_pose is not None:
+                        print(f"[Frame {frame_index}] position = {safe_get(eye_pose, 'position', None)}")
+                        print(f"[Frame {frame_index}] rotation = {safe_get(eye_pose, 'rotation', None)}")
 
-            px, py, pz, rx, ry, rz, rw = extract_pose_values(eye_pose)
+                px, py, pz, rx, ry, rz, rw = extract_pose_values(eye_pose)
 
-            row = [
-                f"{now_unix:.6f}",
-                f"{time_ms:.1f}",
-                frame_index,
-                ";".join(str(k) for k in keys),
-                eye_key,
-                eye_pose is not None,
-                px,
-                py,
-                pz,
-                rx,
-                ry,
-                rz,
-                rw,
-                "", "", "",
-                "", "", "", "",
-            ]
-            writer.writerow(row)
-            frame_index += 1
-
+                row = [
+                    f"{now_unix:.6f}",
+                    f"{time_ms:.1f}",
+                    frame_index,
+                    ";".join(str(k) for k in keys),
+                    eye_key,
+                    eye_pose is not None,
+                    px,
+                    py,
+                    pz,
+                    rx,
+                    ry,
+                    rz,
+                    rw,
+                    "", "", "",
+                    "", "", "", "",
+                ]
+                writer.writerow(row)
+                frame_index += 1
+    except KeyboardInterrupt:
+        # Ctrl+C between the signal handler firing and the next loop check.
+        print("\n[xarp_eye_logger] KeyboardInterrupt, stopping...")
+    finally:
         close = getattr(stream, "close", None)
         if callable(close):
-            close()
+            try:
+                close()
+            except Exception as exc:  # noqa: BLE001 - closing should never crash exit
+                print(f"[xarp_eye_logger] stream.close() failed: {exc!r}")
 
     print(f"\n[xarp_eye_logger] Logged {frame_index} frames in {elapsed:.1f}s")
     print(f"[xarp_eye_logger] CSV saved to: {csv_path}")
