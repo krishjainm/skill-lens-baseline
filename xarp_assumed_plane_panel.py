@@ -147,12 +147,23 @@ def app(xr: SyncXR, *args, **kwargs) -> None:
     print("=" * 60)
 
     panel, markers = build_elements()
+
+    # Place the panel + markers in WORLD space exactly once. In default mode the
+    # transform computed here is never touched again, so the panel stays pinned
+    # to the assumed plane no matter where the user looks or walks.
     xr.update(panel)
     for marker in markers:
         xr.update(marker)
 
-    # Sense the eye pose for the readout and (optionally) to drive follow-eye
-    # mode. Elements are re-sent each frame so they persist in the scene.
+    if cli_args.follow_eye:
+        print("FOLLOW EYE MODE: panel follows eye ray")
+    else:
+        print(f"DEFAULT FIXED MODE: panel position = "
+              f"{tuple(panel.transform.position)}")
+
+    # We only need the eye stream for follow-eye mode and for the optional
+    # per-frame readout. The default mode NEVER uses the eye pose to move or
+    # rotate the panel.
     stream = xr.sense(eye=True)
     start_time = time.time()
     frame_index = 0
@@ -166,13 +177,19 @@ def app(xr: SyncXR, *args, **kwargs) -> None:
 
             eye = frame.get("eye") if isinstance(frame, dict) else None
 
-            # In follow-eye mode, move the panel onto the eye ray (like
-            # demos/video_feed.py) for direct comparison with the fixed plane.
-            if cli_args.follow_eye and eye is not None:
-                panel.transform.position = eye.ray_point(0.8)
-                panel.transform.rotation = eye.rotation
+            if cli_args.follow_eye:
+                # --follow-eye is the ONLY mode that reads the eye pose to drive
+                # the panel (like demos/video_feed.py), for comparison with the
+                # fixed plane.
+                if eye is not None:
+                    panel.transform.position = eye.ray_point(0.8)
+                    panel.transform.rotation = eye.rotation
+                xr.update(panel)
+            else:
+                # Default world-fixed mode: re-send the SAME fixed transform so
+                # the element persists, but never recompute it from eye/head.
+                xr.update(panel)
 
-            xr.update(panel)
             for marker in markers:
                 xr.update(marker)
 
