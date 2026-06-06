@@ -69,6 +69,13 @@ def parse_args():
         help="Make the panel follow the eye ray (like demos/video_feed.py) for "
              "comparison, instead of staying at the fixed assumed plane.",
     )
+    parser.add_argument(
+        "--fixed-in-front",
+        action="store_true",
+        help="Capture the eye pose on the FIRST valid frame, place the panel "
+             "1.0 m in front along that ray, then freeze it in world space "
+             "forever (never re-read the eye after frame 0).",
+    )
     return parser.parse_args()
 
 
@@ -137,7 +144,12 @@ def app(xr: SyncXR, *args, **kwargs) -> None:
     cli_args = parse_args()
     duration = cli_args.duration
 
-    mode = "follow-eye" if cli_args.follow_eye else "fixed assumed plane"
+    if cli_args.follow_eye:
+        mode = "follow-eye"
+    elif cli_args.fixed_in_front:
+        mode = "fixed-in-front"
+    else:
+        mode = "fixed assumed plane"
     print("=" * 60)
     print("  Assumed-plane panel sanity check")
     print(f"  mode={mode}")
@@ -157,16 +169,22 @@ def app(xr: SyncXR, *args, **kwargs) -> None:
 
     if cli_args.follow_eye:
         print("FOLLOW EYE MODE: panel follows eye ray")
+    elif cli_args.fixed_in_front:
+        print("FIXED IN FRONT MODE: waiting for first valid eye frame...")
     else:
         print(f"DEFAULT FIXED MODE: panel position = "
               f"{tuple(panel.transform.position)}")
 
-    # We only need the eye stream for follow-eye mode and for the optional
-    # per-frame readout. The default mode NEVER uses the eye pose to move or
-    # rotate the panel.
+    # We only need the eye stream for follow-eye / fixed-in-front capture and
+    # for the optional per-frame readout. The default mode NEVER uses the eye
+    # pose to move or rotate the panel.
     stream = xr.sense(eye=True)
     start_time = time.time()
     frame_index = 0
+
+    # --fixed-in-front captures the eye pose on the first valid frame, then
+    # freezes the panel transform in world space forever.
+    fixed_in_front_captured = False
 
     try:
         for frame in stream:
@@ -178,12 +196,24 @@ def app(xr: SyncXR, *args, **kwargs) -> None:
             eye = frame.get("eye") if isinstance(frame, dict) else None
 
             if cli_args.follow_eye:
-                # --follow-eye is the ONLY mode that reads the eye pose to drive
-                # the panel (like demos/video_feed.py), for comparison with the
-                # fixed plane.
+                # --follow-eye is the ONLY mode that continuously reads the eye
+                # pose to drive the panel (like demos/video_feed.py), for
+                # comparison with the fixed plane.
                 if eye is not None:
                     panel.transform.position = eye.ray_point(0.8)
                     panel.transform.rotation = eye.rotation
+                xr.update(panel)
+            elif cli_args.fixed_in_front:
+                # Read the eye pose exactly ONCE (first valid frame), place the
+                # panel 1.0 m down that ray, freeze it, and never read the eye
+                # again. Afterwards we only re-send the frozen transform so the
+                # element persists in the scene.
+                if not fixed_in_front_captured and eye is not None:
+                    panel.transform.position = eye.ray_point(1.0)
+                    panel.transform.rotation = eye.rotation
+                    fixed_in_front_captured = True
+                    print("FIXED IN FRONT MODE: captured initial eye pose and "
+                          "froze panel")
                 xr.update(panel)
             else:
                 # Default world-fixed mode: re-send the SAME fixed transform so
