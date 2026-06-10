@@ -10,8 +10,14 @@ from xarp.spatial import Quaternion, Transform, Vector3
 # --- Assumed plane (must match project_xarp_eye_to_plane.py) ----------------
 # NOTE: these are only used here for VISUALIZATION. The projection math lives in
 # project_xarp_eye_to_plane.py and is intentionally not touched by this script.
-PLANE_CENTER = (0.0, 0.0, -1.0)
-PLANE_NORMAL = (0.0, 0.0, 1.0)
+#
+# COORDINATE-SYSTEM CLARIFICATION (from Arthur): the Quest runtime is
+# right-handed-feeling with x+ = right, y+ = up, z+ = FORWARD (toward where the
+# user looks). A plane at z=-1.0 therefore sits BEHIND the viewer, which is why
+# the panel/cursor were invisible. For the default visible test we place the
+# plane IN FRONT at z=+1.0 with its normal pointing back at the viewer (-Z).
+PLANE_CENTER = (0.0, 0.0, 1.0)
+PLANE_NORMAL = (0.0, 0.0, -1.0)
 PLANE_WIDTH = 1.0
 PLANE_HEIGHT = 0.6
 
@@ -25,6 +31,11 @@ PANEL_SCALE = (1.5, 1.0, 1.0)
 PANEL_COLOR = (0.2, 0.5, 1.0, 1.0)   # opaque blue panel
 CENTER_DOT_COLOR = (1.0, 0.0, 0.0, 1.0)  # bright red dot at the plane center
 CENTER_DOT_SCALE = 0.15  # enlarged from 0.04 for easier debugging
+
+# Gaze cursor: a small white sphere that rides on the panel surface, tracking
+# where the eye ray intersects the assumed plane (default fixed-plane mode).
+GAZE_CURSOR_COLOR = (1.0, 1.0, 1.0, 1.0)  # white, distinct from the red center dot
+GAZE_CURSOR_SCALE = 0.05
 
 # Distance markers along the gaze axis (z), each a different color, with labels.
 # (position, RGBA color, text label)
@@ -86,6 +97,30 @@ def _panel_rotation() -> Quaternion:
     return Quaternion.identity()
 
 
+def _ray_plane_intersection(origin: Vector3, direction: Vector3) -> Vector3 | None:
+    """Intersect the eye ray with the assumed plane.
+
+    Plane is defined by PLANE_CENTER (a point on it) and PLANE_NORMAL. Solving
+    n . (origin + t*direction - plane_point) = 0  for t gives
+        t = n . (plane_point - origin) / (n . direction)
+
+    Returns the world-space hit point, or None when the ray is parallel to the
+    plane (denominator ~ 0) or the intersection is behind the viewer (t <= 0).
+    """
+    plane_point = Vector3(*PLANE_CENTER)
+    plane_normal = Vector3(*PLANE_NORMAL)
+
+    denom = direction.dot(plane_normal)
+    if abs(denom) < 1e-6:
+        return None  # ray is parallel to the plane
+
+    t = (plane_point - origin).dot(plane_normal) / denom
+    if t <= 0.0:
+        return None  # plane is behind the viewer
+
+    return origin + direction * t
+
+
 def build_elements() -> tuple[Element, list[Element]]:
     """Build the flat panel plus debug markers (center dot, distance spheres, labels).
 
@@ -112,6 +147,19 @@ def build_elements() -> tuple[Element, list[Element]]:
         transform=Transform(
             position=Vector3(*PLANE_CENTER),
             scale=Vector3.one() * CENTER_DOT_SCALE,
+        ),
+    ))
+
+    # White gaze cursor. Starts at the plane center; its position is updated
+    # every frame in default mode from the eye-ray/plane intersection. It lives
+    # in *markers* so the existing per-frame re-send loop keeps it persisted.
+    markers.append(Element(
+        key="gaze_cursor",
+        asset=DefaultAssets.sphere(),
+        color=GAZE_CURSOR_COLOR,
+        transform=Transform(
+            position=Vector3(*PLANE_CENTER),
+            scale=Vector3.one() * GAZE_CURSOR_SCALE,
         ),
     ))
 
@@ -159,10 +207,12 @@ def app(xr: SyncXR, *args, **kwargs) -> None:
     print("=" * 60)
 
     panel, markers = build_elements()
+    gaze_cursor = next(m for m in markers if m.key == "gaze_cursor")
 
     # Place the panel + markers in WORLD space exactly once. In default mode the
-    # transform computed here is never touched again, so the panel stays pinned
-    # to the assumed plane no matter where the user looks or walks.
+    # panel transform computed here is never touched again, so the panel stays
+    # pinned to the assumed plane no matter where the user looks or walks. The
+    # gaze cursor (a marker) IS updated each frame in default mode below.
     xr.update(panel)
     for marker in markers:
         xr.update(marker)
@@ -216,14 +266,32 @@ def app(xr: SyncXR, *args, **kwargs) -> None:
                           "froze panel")
                 xr.update(panel)
             else:
-                # Default world-fixed mode: re-send the SAME fixed transform so
-                # the element persists, but never recompute it from eye/head.
+                # Default world-fixed mode: the panel stays put (re-send the
+                # SAME fixed transform). The gaze cursor rides on the panel
+                # surface, tracking the eye-ray/plane intersection each frame.
                 xr.update(panel)
 
+                hit = _ray_plane_intersection(eye.position, eye.forward) \
+                    if eye is not None else None
+                if hit is not None:
+                    gaze_cursor.transform.position = hit
+
+                if not cli_args.quiet and eye is not None and frame_index % 30 == 0:
+                    print(f"[frame {frame_index}] eye.position={eye.position} "
+                          f"eye.forward={eye.forward} "
+                          f"gaze_cursor.position={gaze_cursor.transform.position} "
+                          f"{'hit' if hit is not None else 'no-hit'}")
+
+            # Re-send all markers (incl. the gaze cursor) so they persist and
+            # the cursor's updated position is pushed to the device.
             for marker in markers:
                 xr.update(marker)
 
-            if not cli_args.quiet and eye is not None and frame_index % 30 == 0:
+            # --follow-eye / --fixed-in-front keep their original readout
+            # (default mode prints its own gaze-cursor readout above).
+            if (cli_args.follow_eye or cli_args.fixed_in_front) \
+                    and not cli_args.quiet and eye is not None \
+                    and frame_index % 30 == 0:
                 print(f"[frame {frame_index}] eye.position={eye.position} "
                       f"eye.rotation={eye.rotation} "
                       f"panel.position={panel.transform.position}")
